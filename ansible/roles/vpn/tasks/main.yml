@@ -1,0 +1,24 @@
+- name: Render Kubernetes manifests
+  template:
+    src: "wg-easy-vpn.yml.j2"
+    dest: "/tmp/wg-easy-manifests.yml"
+  register: rendered_manifests
+
+- name: Fetch rendered manifest
+  slurp:
+    src: "/tmp/wg-easy-manifests.yml"
+  register: slurped_manifest
+
+- name: Debug rendered manifest
+  debug:
+    msg: "{{ slurped_manifest['content'] | b64decode }}"
+
+- name: Apply rendered Kubernetes manifests
+  kubernetes.core.k8s:
+    definition: "{{ slurped_manifest['content'] | b64decode | from_yaml_all | list }}"
+    state: present
+
+- name: Remove temporary file
+  file:
+    path: "/tmp/wg-easy-manifests.yml"
+    state: absent

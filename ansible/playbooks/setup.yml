@@ -1,0 +1,23 @@
+---
+- hosts: all
+  become: yes
+  vars_files:
+    - "{{ playbook_dir }}/../group_vars/all/vault.yml"
+  pre_tasks:
+    - name: Load non-sensitive environment variables
+      set_fact: 
+        wg_host: "{{ ansible_host }}"
+
+  tasks:
+    - name: Ensure k3s is installed
+      include_role:
+        name: k3s
+
+    - name: Set up monitoring
+      include_role:
+        name: monitoring
+
+    - name: Configure VPN
+      include_role:
+        name: vpn
+

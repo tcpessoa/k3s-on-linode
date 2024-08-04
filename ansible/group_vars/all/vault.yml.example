@@ -1,0 +1,14 @@
+# Prometheus admin password
+prometheus_admin_password: "change_me"
+
+# Grafana admin password
+grafana_admin_password: "change_me"
+
+# WireGuard password
+wg_password: "change_me"
+
+# Linode API token
+linode: "your_linode_api_token"
+
+# Email for cert-manager
+cert_manager_email: "your_email@example.com"

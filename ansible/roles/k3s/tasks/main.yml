@@ -1,0 +1,113 @@
+---
+- name: Check if k3s is installed
+  command: which k3s
+  register: k3s_check
+  changed_when: false
+  failed_when: false
+
+- name: Install k3s
+  shell: curl -sfL https://get.k3s.io | sh -
+  when: k3s_check.rc != 0
+
+- name: Ensure .kube directory exists
+  file:
+    path: ~/.kube
+    state: directory
+    mode: '0755'
+
+- name: Copy k3s.yaml to .kube/config
+  copy:
+    src: /etc/rancher/k3s/k3s.yaml
+    dest: ~/.kube/config
+    remote_src: yes
+    owner: "{{ ansible_user_id }}"
+    group: "{{ ansible_user_gid }}"
+    mode: '0600'
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Update apt package list
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Ensure Python and pip are installed
+  apt:
+    name: 
+      - python3
+      - python3-pip
+      - python3-kubernetes
+    state: present
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Check if Helm is installed
+  command: which helm
+  register: helm_check
+  changed_when: false
+  failed_when: false
+
+- name: Install Helm
+  shell: curl https://raw.githubusercontent.com/helm/helm/master/scripts/get-helm-3 | bash
+  when: helm_check.rc != 0
+
+- name: Add Jetstack Helm repo (Cert-Manager)
+  kubernetes.core.helm_repository:
+    name: jetstack
+    repo_url: https://charts.jetstack.io
+
+- name: Add Linode Helm repo
+  kubernetes.core.helm_repository:
+    name: linode-csi
+    repo_url: https://linode.github.io/linode-blockstorage-csi-driver/ 
+
+- name: Update Helm repos
+  command: helm repo update
+
+- name: Install Cert-Manager
+  kubernetes.core.helm:
+    name: cert-manager
+    chart_ref: jetstack/cert-manager
+    release_namespace: cert-manager
+    create_namespace: true
+    values:
+      installCRDs: true
+
+- name: Wait for Cert-Manager to be ready
+  kubernetes.core.k8s_info:
+    kind: Deployment
+    namespace: cert-manager
+    name: cert-manager
+    wait: yes
+    wait_timeout: 300
+    wait_condition:
+      type: Available
+      status: "True"
+
+- name: Apply ClusterIssuer Staging
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'cluster-issuer-staging.yaml.j2') | from_yaml }}"
+
+- name: Apply ClusterIssuer Production
+  kubernetes.core.k8s:
+    state: present
+    definition: "{{ lookup('template', 'cluster-issuer-production.yaml.j2') | from_yaml }}"
+
+- name: Install Linode BlockStorage CSI Driver
+  kubernetes.core.helm:
+    name: linode-csi-driver
+    chart_ref: linode-csi/linode-blockstorage-csi-driver
+    release_namespace: kube-system
+    create_namespace: false
+    values:
+      apiToken: "{{ linode_api_token }}"
+      region: "{{ linode_region | default('eu-central') }}"
+
+- name: Create Linode Block Storage Class
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: linode-block-storage
+      provisioner: linodebs.csi.linode.com
+      allowVolumeExpansion: true

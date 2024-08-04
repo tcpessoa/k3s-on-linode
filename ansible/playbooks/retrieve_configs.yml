@@ -1,0 +1,29 @@
+---
+- name: Retrieve kubeconfig
+  hosts: k3s
+  tasks:
+    - name: Create local directory to store config files
+      local_action:
+        module: file
+        path: "{{ playbook_dir }}/configs"
+        state: directory
+
+    - name: Copy kubeconfig file to local machine
+      ansible.builtin.fetch:
+        src: /etc/rancher/k3s/k3s.yaml
+        dest: "{{ playbook_dir }}/configs/kubeconfig"
+        flat: yes
+
+    - name: Replace server address in kubeconfig
+      local_action:
+        module: replace
+        path: "{{ playbook_dir }}/configs/kubeconfig"
+        regexp: 'server: https://127.0.0.1:6443'
+        replace: "server: https://{{ inventory_hostname }}:6443"
+
+    - name: Get wg-easy pod name
+      command: kubectl get pods -n vpn -l app=wg-easy -o jsonpath='{.items[0].metadata.name}'
+      register: wg_easy_pod
+      changed_when: false
+
+      ## TODO: automatically generate a conf file and send it back

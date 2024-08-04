@@ -1,0 +1,82 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: vpn
+
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: wg-easy-config
+  namespace: vpn
+data:
+  WG_HOST: "{{ wg_host }}"
+
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: wg-easy-secret
+  namespace: vpn
+type: Opaque
+stringData:
+  PASSWORD: "{{ wg_password }}"
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: wg-easy
+  namespace: vpn
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: wg-easy
+  template:
+    metadata:
+      labels:
+        app: wg-easy
+    spec:
+      containers:
+      - name: wg-easy
+        image: weejewel/wg-easy:latest
+        securityContext:
+          capabilities:
+            add: ["NET_ADMIN", "SYS_MODULE"]
+        envFrom:
+        - configMapRef:
+            name: wg-easy-config
+        - secretRef:
+            name: wg-easy-secret
+        ports:
+        - containerPort: 51820
+          protocol: UDP
+        - containerPort: 51821
+          protocol: TCP
+        volumeMounts:
+        - name: wg-easy-data
+          mountPath: /etc/wireguard
+      volumes:
+      - name: wg-easy-data
+        emptyDir: {}
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: wg-easy
+  namespace: vpn
+spec:
+  type: LoadBalancer
+  selector:
+    app: wg-easy
+  ports:
+  - name: wireguard
+    port: 51820
+    protocol: UDP
+  - name: web
+    port: 51821
+    protocol: TCP
+

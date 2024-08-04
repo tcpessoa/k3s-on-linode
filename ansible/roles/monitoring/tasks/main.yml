@@ -1,0 +1,131 @@
+---
+- name: Create namespace for monitoring
+  kubernetes.core.k8s:
+    state: present
+    definition:
+      apiVersion: v1
+      kind: Namespace
+      metadata:
+        name: monitoring
+
+- name: Add Helm repositories for monitoring
+  kubernetes.core.helm_repository:
+    name: "{{ item.name }}"
+    repo_url: "{{ item.url }}"
+  loop:
+    - { name: "prometheus-community", url: "https://prometheus-community.github.io/helm-charts" }
+    - { name: "grafana", url: "https://grafana.github.io/helm-charts" }
+
+- name: Deploy Prometheus using Helm
+  kubernetes.core.helm:
+    name: prometheus
+    chart_ref: prometheus-community/prometheus
+    namespace: monitoring
+    create_namespace: false
+    release_values:
+      alertmanager:
+        enabled: true
+        persistentVolume:
+          enabled: true
+          storageClass: "local-path"
+          size: 1Gi
+      server:
+        persistentVolume:
+          enabled: true
+          storageClass: "local-path"
+          size: 10Gi
+        retention: 7d
+        retentionSize: 9GB
+      pushgateway:
+        enabled: false
+      nodeExporter:
+        enabled: true
+      kubeStateMetrics:
+        enabled: true
+
+- name: Deploy Loki using Helm
+  kubernetes.core.helm:
+    name: loki
+    chart_ref: grafana/loki-stack
+    namespace: monitoring
+    create_namespace: false
+    release_values:
+      loki:
+        persistence:
+          enabled: true
+          storageClass: "local-path"
+          size: 5Gi
+        config:
+          limits_config:
+            retention_period: 168h  # 7 days
+      promtail:
+        enabled: true
+      grafana:
+        enabled: false  # Grafana is installed separately
+
+- name: Deploy Grafana using Helm
+  kubernetes.core.helm:
+    name: grafana
+    chart_ref: grafana/grafana
+    namespace: monitoring
+    create_namespace: false
+    release_values:
+      adminPassword: "{{ grafana_admin_password }}"
+      persistence:
+        enabled: false
+      datasources:
+        datasources.yaml:
+          apiVersion: 1
+          datasources:
+          - name: Prometheus
+            type: prometheus
+            url: http://prometheus-server.monitoring.svc.cluster.local
+            access: proxy
+            isDefault: true
+          - name: Loki
+            type: loki
+            url: http://loki.monitoring.svc.cluster.local:3100
+            access: proxy
+      dashboardProviders:
+        dashboardproviders.yaml:
+          apiVersion: 1
+          providers:
+          - name: 'default'
+            orgId: 1
+            folder: ''
+            type: file
+            disableDeletion: false
+            editable: true
+            options:
+              path: /var/lib/grafana/dashboards
+      dashboards:
+        default:
+          kubernetes-cluster-monitoring-1:
+            gnetId: 13770
+            revision: 1
+            datasource: Prometheus
+          kubernetes-cluster-monitoring-2:
+            gnetId: 315
+            revision: 3
+            datasource: Prometheus
+          kubernetes-cluster-monitoring-3:
+            gnetId: 7249
+            revision: 1
+            datasource: Prometheus
+          kubernetes-cluster-monitoring-4:
+            gnetId: 1860
+            revision: 37
+            datasource: Prometheus
+          kubernetes-cluster-monitoring-5:
+            gnetId: 6417
+            revision: 1
+            datasource: Prometheus
+          traefik:
+            gnetId: 4475
+            revision: 5
+            datasource: Prometheus
+          loki-dashboard:
+            gnetId: 13639
+            revision: 2
+            datasource: Loki
+

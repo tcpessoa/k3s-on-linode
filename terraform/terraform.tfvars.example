@@ -1,0 +1,2 @@
+linode_token = ""
+ssh_public_key = "{REPLACE_ME}/.ssh/id_rsa.pub"

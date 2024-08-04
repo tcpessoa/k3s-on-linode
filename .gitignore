@@ -1,1 +1,16 @@
-./terraform/terraform.tfvars
+.venv/*
+
+# Terraform
+terraform/terraform.tfvars
+terraform/.terraform/
+terraform/.terraform.lock.hcl
+terraform/terraform.tfstate*
+
+# Ansible
+ansible/playbooks/configs/kubeconfig
+ansible/inventory/hosts.yml
+
+## Ansible Vault
+ansible/group_vars/all/vault.yml
+ansible/.vault_password
+
