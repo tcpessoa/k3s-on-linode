@@ -1,4 +1,7 @@
 # k3s-on-linode
+<img src="./docs/k3s.png" alt="k3s" height="150"/>
+<img src="./docs/linode.png" alt="linode" height="150"/>
+
 
 This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kubernetes cluster on Linode using Terraform and Ansible. It sets up a single-node K3s cluster with monitoring, a VPN, and other essential components for a production-ready Kubernetes environment.
 
@@ -10,6 +13,14 @@ This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kuber
 - Cert-Manager for automatic SSL/TLS certificate management
 - Traefik as the Ingress Controller
 - Linode CSI Driver for dynamic volume provisioning
+
+## Default dashboards included
+
+View metrics of the VPS via NodeExporter:
+![Node Exporter Metrics](./docs/NodeExporterMetrics.png)
+
+Search for logs across all your pods thanks to Loki with Promtail:
+![Logs with Loki](./docs/LogsWIthLoki.png)
 
 ## Prerequisites
 
@@ -61,7 +72,6 @@ This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kuber
    - Set up WireGuard VPN using the web UI at `http://<LINODE_IP>:51821`. 
 
 ## Usage
-
 Once your cluster is set up, you can deploy applications using kubectl or Helm. Here's an example of deploying a simple application:
 
 ```yaml
