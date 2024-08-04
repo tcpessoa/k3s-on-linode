@@ -1,6 +1,9 @@
 # k3s-on-linode
+
+<p align="center">
 <img src="./docs/k3s.png" alt="k3s" height="100"/>
 <img src="./docs/linode.png" alt="linode" height="100"/>
+</p>
 
 
 This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kubernetes cluster on Linode using Terraform and Ansible. It sets up a single-node K3s cluster with monitoring, a VPN, and other essential components for a production-ready Kubernetes environment.
