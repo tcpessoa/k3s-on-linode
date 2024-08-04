@@ -1,21 +1,109 @@
-# Usage guide
-- Terraform to create infra
-- Ansible to install k3s and relevant software
-- Ansible again to retrieve the kubeconfig
-- Access vpn through IP and create a new conf (`<LINODE_IP>:51821`)
-- Add it to your wireguard
-- You can now use kubectl
+# k3s-on-linode
 
-Now, add your first app, follow this example ingress:
+This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kubernetes cluster on Linode using Terraform and Ansible. It sets up a single-node K3s cluster with monitoring, a VPN, and other essential components for a production-ready Kubernetes environment.
+
+## Features
+
+- Automated deployment of a K3s cluster on Linode
+- Integrated monitoring stack with Prometheus, Loki (with Promtail) and Grafana.
+- WireGuard VPN for secure cluster access
+- Cert-Manager for automatic SSL/TLS certificate management
+- Traefik as the Ingress Controller
+- Linode CSI Driver for dynamic volume provisioning
+
+## Prerequisites
+
+- [Terraform](https://www.terraform.io/) (v1.9+)
+- [Ansible](https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html) (v2.17.2+)
+- [kubectl](https://kubernetes.io/docs/tasks/tools/)
+- [Helm](https://helm.sh/docs/intro/install/)
+- A Linode account and API token
+
+## Getting Started
+
+1. Clone this repository:
+   ```
+   git clone https://github.com/tcpessoa/k3s-on-linode.git
+   cd k3s-on-linode
+   ```
+
+2. Create a python virtual environment and activate it. Run `pip install -r requirements.txt`
+
+3. Run the setup script:
+   ```
+   ./setup.sh
+   ```
+
+4. Edit the configuration files:
+   - `terraform/terraform.tfvars`: Add your Linode API token and SSH key path
+   - `ansible/group_vars/all/vault.yml`: Set passwords and other sensitive information
+
+5. Deploy the infrastructure:
+   ```
+   cd terraform
+   terraform init
+   terraform apply
+   ```
+
+6. Deploy K3s and additional components:
+   ```
+   cd ../ansible
+   ansible-playbook playbooks/setup.yml
+   ```
+
+7. Retrieve the kubeconfig:
+   ```
+   ansible-playbook playbooks/retrieve_configs.yml
+   ```
+
+8. Access your cluster:
+   - Use the kubeconfig file in `ansible/playbooks/configs/kubeconfig`
+   - Set up WireGuard VPN using the web UI at `http://<LINODE_IP>:51821`. 
+
+## Usage
+
+Once your cluster is set up, you can deploy applications using kubectl or Helm. Here's an example of deploying a simple application:
+
 ```yaml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: myapp
+  template:
+    metadata:
+      labels:
+        app: myapp
+    spec:
+      containers:
+      - name: myapp
+        image: nginx:latest
+        ports:
+        - containerPort: 80
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: myapp
+  namespace: default
+spec:
+  selector:
+    app: myapp
+  ports:
+    - port: 80
+      targetPort: 80
+---
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
   annotations:
     cert-manager.io/cluster-issuer: letsencrypt-production
     spec.ingressClassName: traefik
-  labels:
-    app: myapp
   name: myapp
   namespace: default
 spec:
@@ -35,52 +123,12 @@ spec:
     - myapp.example.com
     secretName: myapp-example-com-tls
 ```
-check `./k8s/test.yaml`
 
-# Initial setup
-Create a python virtual environment and activate it.
-Run `pip install -r requirements.txt`
+Save this as `myapp.yaml` and apply it with:
 
-Run `setup.sh` to initialize your terraform and ansible secrets.
-
-You should now be able to edit:
-- `terraform/terraform.tfvars`
-- `ansible/group_vars/all/vault.yml`
-
-For the latter use:
-- `ansible-vault edit ansible/group_vars/all/vault.yml --vault-password-file ansible/.vault_password`
-
-# Terraform
-- Run `cd terraform`
-- Initialize terraform with:
-
-```sh
-terraform init
 ```
-
-Check what will be created with:
-
-```sh
-terraform plan -var-file="terraform.tfvars"
+kubectl apply -f myapp.yaml
 ```
-
-and then apply with:
-
-```sh
-terraform apply -var-file="terraform.tfvars"
-```
-
-# Ansible
-- From the root of the project, run `cd ansible`
-
-Now run `ansible-playbook playbooks/setup.yml` and then:
-
-
-`ansible-playbook playbooks/retrieve_configs.yml` to get your kubeconfig on `./ansible/playbooks/configs/`.
-
-Then visit `<LINODE_IP>:51821` to generate a VPN conf file. Add it to your wireguard client.
-
-Now you are ready to run `kubectl`
 
 # Troubleshoot
 - Run `ansible-playbook -vvvv ...` to increase verbosity of commands
@@ -89,7 +137,17 @@ Now you are ready to run `kubectl`
 # Improvements
 - [ ] Automatically generate VPN conf file and get it (generating the wg conf is more complex then I imagined)
 
-## Cert manager
+## Contributing
 
-[reference article](https://levelup.gitconnected.com/easy-steps-to-install-k3s-with-ssl-certificate-by-traefik-cert-manager-and-lets-encrypt-d74947fe7a8)
+Contributions are welcome! Please feel free to submit a Pull Request.
 
+## License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## Acknowledgements
+
+- [K3s](https://k3s.io/)
+- [Linode](https://www.linode.com/)
+- [Terraform](https://www.terraform.io/)
+- [Ansible](https://www.ansible.com/)
