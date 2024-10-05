@@ -1,6 +1,9 @@
 ---
-- name: Retrieve kubeconfig
+- name: Generate WireGuard client configuration
   hosts: k3s
+  vars:
+    wg_client_name: "my-vpn-client"  # Adjust this name as needed
+    cluster_name: "linode-k3s-new"
   tasks:
     - name: Create local directory to store config files
       local_action:
@@ -21,9 +24,130 @@
         regexp: 'server: https://127.0.0.1:6443'
         replace: "server: https://{{ inventory_hostname }}:6443"
 
-    - name: Get wg-easy pod name
-      command: kubectl get pods -n vpn -l app=wg-easy -o jsonpath='{.items[0].metadata.name}'
-      register: wg_easy_pod
-      changed_when: false
+    - name: Replace all instances of 'default' with new cluster name in kubeconfig
+      local_action:
+        module: replace
+        path: "{{ playbook_dir }}/configs/kubeconfig"
+        regexp: '\bdefault\b'
+        replace: "{{ cluster_name | default('k3s-cluster') }}"
 
-      ## TODO: automatically generate a conf file and send it back
+    - name: Display kubeconfig path
+      debug:
+        msg: "Kubeconfig file: {{ playbook_dir }}/configs/kubeconfig"
+
+    # TODO: fix this to automatically
+    #       retrieve a working conf
+
+    # - name: Get wg-easy pod name
+    #   command: kubectl get pods -n vpn -l app=wg-easy -o jsonpath='{.items[0].metadata.name}'
+    #   register: wg_easy_pod
+    #   changed_when: false
+    #
+    # - name: Debug wg-easy pod name
+    #   debug:
+    #     var: wg_easy_pod.stdout
+    #
+    # - name: Get WireGuard server configuration
+    #   command: kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- cat /etc/wireguard/wg0.conf
+    #   register: wg_server_config
+    #   changed_when: false
+    #
+    # - name: Debug WireGuard server configuration
+    #   debug:
+    #     var: wg_server_config.stdout
+    #
+    # - name: Extract server subnet
+    #   set_fact:
+    #     server_subnet: "{{ wg_server_config.stdout | regex_search('Address = ([\\d\\.]+/\\d+)', '\\1') | first }}"
+    #
+    # - name: Debug server subnet
+    #   debug:
+    #     var: server_subnet
+    #
+    # - name: Generate client IP
+    #   set_fact:
+    #     wg_client_ip: "{{ server_subnet | regex_replace('\\.\\d+/\\d+$', '.2/32') }}"
+    #
+    # - name: Debug client IP
+    #   debug:
+    #     var: wg_client_ip
+    #
+    # - name: Generate WireGuard client private key
+    #   command: kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- wg genkey
+    #   register: client_private_key
+    #   changed_when: false
+    #
+    # - name: Debug client private key (DO NOT SHARE THIS)
+    #   debug:
+    #     var: client_private_key.stdout
+    #
+    # - name: Generate WireGuard client public key
+    #   command: kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- sh -c "echo '{{ client_private_key.stdout }}' | wg pubkey"
+    #   register: client_public_key
+    #   changed_when: false
+    #
+    # - name: Debug client public key
+    #   debug:
+    #     var: client_public_key.stdout
+    #
+    # - name: Get server public key
+    #   command: kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- sh -c "grep PrivateKey /etc/wireguard/wg0.conf | cut -d ' ' -f 3 | wg pubkey"
+    #   register: server_public_key
+    #   changed_when: false
+    #
+    # - name: Debug server public key
+    #   debug:
+    #     var: server_public_key.stdout
+    #
+    # - name: Get server endpoint
+    #   command: kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- sh -c "grep '^ListenPort' /etc/wireguard/wg0.conf | cut -d ' ' -f 3"
+    #   register: server_listen_port
+    #   changed_when: false
+    #
+    # - name: Debug server listen port
+    #   debug:
+    #     var: server_listen_port.stdout
+    #
+    # - name: Generate client configuration
+    #   local_action:
+    #     module: template
+    #     src: wg-client.conf.j2
+    #     dest: "{{ playbook_dir }}/configs/{{ wg_client_name }}.conf"
+    #   vars:
+    #     client_private_key: "{{ client_private_key.stdout }}"
+    #     server_public_key: "{{ server_public_key.stdout }}"
+    #     server_endpoint: "{{ inventory_hostname }}:{{ server_listen_port.stdout }}"
+    #
+    # - name: Add client to WireGuard configuration
+    #   command: >
+    #     kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- wg set wg0 peer {{ client_public_key.stdout }} allowed-ips {{ wg_client_ip }}
+    #   changed_when: true
+    #
+    # - name: Update wg0.conf file
+    #   command: >
+    #     kubectl exec -n vpn {{ wg_easy_pod.stdout }} -- wg-quick save wg0
+    #   changed_when: true
+    #
+    # - name: Display client information
+    #   debug:
+    #     msg: 
+    #       - "Client name: {{ wg_client_name }}"
+    #       - "Client IP: {{ wg_client_ip }}"
+    #       - "Configuration file: {{ playbook_dir }}/configs/{{ wg_client_name }}.conf"
+    #
+    # - name: Cat the client configuration file
+    #   local_action:
+    #     module: command
+    #     cmd: "cat {{ playbook_dir }}/configs/{{ wg_client_name }}.conf"
+    #   register: client_conf_content
+    #
+    # - name: Display client configuration content
+    #   debug:
+    #     var: client_conf_content.stdout_lines
+    #
+    # - name: Display client information
+    #   debug:
+    #     msg: 
+    #       - "Client name: {{ wg_client_name }}"
+    #       - "Client IP: {{ wg_client_ip }}"
+    #       - "Configuration file: {{ playbook_dir }}/configs/{{ wg_client_name }}.conf"

@@ -1,0 +1,16 @@
+---
+- name: Restart SSH
+  systemd:
+    name: ssh
+    state: restarted
+    daemon_reload: yes
+
+- name: Restart unattended-upgrades
+  systemd:
+    name: unattended-upgrades
+    state: restarted
+
+- name: Restart fail2ban
+  systemd:
+    name: fail2ban
+    state: restarted

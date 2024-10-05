@@ -1,2 +1,12 @@
 linode_token = ""
 ssh_public_key = "{REPLACE_ME}/.ssh/id_rsa.pub"
+
+cloudflare_api_token = "s--"
+main_domain       = "mainexample.com"
+additional_domains = [
+	# "example.com"
+]
+cloudflare_zone_ids = {
+  "mainexample.com"        = "1234567891283178263172"
+  # "example.com"   = "your_app1_domain_zone_id"
+}

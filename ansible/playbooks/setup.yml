@@ -9,6 +9,10 @@
         wg_host: "{{ ansible_host }}"
 
   tasks:
+    - name: Setup server
+      include_role:
+        name: server
+
     - name: Ensure k3s is installed
       include_role:
         name: k3s
@@ -20,4 +24,8 @@
     - name: Configure VPN
       include_role:
         name: vpn
+
+    # - name: Final SSH hardening (remove root login)
+    #   include_role:
+    #     name: remove_root
 

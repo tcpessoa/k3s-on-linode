@@ -25,11 +25,6 @@
     mode: '0600'
   when: ansible_facts['os_family'] == 'Debian'
 
-- name: Update apt package list
-  apt:
-    update_cache: yes
-  when: ansible_facts['os_family'] == 'Debian'
-
 - name: Ensure Python and pip are installed
   apt:
     name: 

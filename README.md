@@ -36,7 +36,7 @@ Search for logs across all your pods thanks to Loki with Promtail:
 ## Getting Started
 
 1. Clone this repository:
-   ```
+   ```sh
    git clone https://github.com/tcpessoa/k3s-on-linode.git
    cd k3s-on-linode
    ```
@@ -44,7 +44,7 @@ Search for logs across all your pods thanks to Loki with Promtail:
 2. Create a python virtual environment and activate it. Run `pip install -r requirements.txt`
 
 3. Run the setup script:
-   ```
+   ```sh
    ./setup.sh
    ```
 
@@ -53,20 +53,20 @@ Search for logs across all your pods thanks to Loki with Promtail:
    - `ansible/group_vars/all/vault.yml`: Set passwords and other sensitive information
 
 5. Deploy the infrastructure:
-   ```
+   ```sh
    cd terraform
    terraform init
    terraform apply
    ```
 
 6. Deploy K3s and additional components:
-   ```
+   ```sh
    cd ../ansible
    ansible-playbook playbooks/setup.yml
    ```
 
 7. Retrieve the kubeconfig:
-   ```
+   ```sh
    ansible-playbook playbooks/retrieve_configs.yml
    ```
 
@@ -146,6 +146,35 @@ kubectl apply -f myapp.yaml
 # Troubleshoot
 - Run `ansible-playbook -vvvv ...` to increase verbosity of commands
 - Run `ansible-playbook -vvv playbooks/debug_role.yml` with the desired role to debug a single step
+- Run `terraform state rm 'cloudflare_zone_settings_override.domain_settings["example.com"]'` to clean up state
+
+# Ansible
+## Server things
+
+### Basic system-wide security settings sysctl
+
+1. `net.ipv4.conf.all.accept_redirects = 0`
+
+Disables acceptance of ICMP redirects for all interfaces.
+Purpose: Prevents potential man-in-the-middle attacks where an attacker could redirect traffic.
+
+
+2. `net.ipv4.conf.all.send_redirects = 0`
+
+Disables sending of ICMP redirects for all interfaces.
+Purpose: Prevents the system from sending ICMP redirects, which could potentially be used to reveal information about the network topology.
+
+
+3. `net.ipv4.conf.all.accept_source_route = 0`
+
+Disables acceptance of source-routed packets for all interfaces.
+Purpose: Prevents source routing, which could be used to bypass network security measures.
+
+
+4. `net.ipv4.tcp_syncookies = 1`
+
+Enables TCP SYN cookies.
+Purpose: Helps protect against SYN flood attacks by validating connection attempts without using memory until the connection is fully established.
 
 # Improvements
 - [ ] Automatically generate VPN conf file and get it (generating the wg conf is more complex then I imagined)

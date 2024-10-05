@@ -1,0 +1,25 @@
+[DEFAULT]
+# Ban hosts for 10 minutes
+bantime  = 10m
+
+# A host is banned if it has generated "maxretry" during the last "findtime" minutes
+findtime  = 10m
+maxretry = 5
+
+# Use systemd journal
+backend = systemd
+
+# Destination of the log messages (STDOUT in this case)
+logtarget = STDOUT
+
+# Default banning action (ban only)
+banaction = iptables-multiport
+
+# Default action (ban & send an e-mail with whois report to the destemail)
+action = %(action_)s
+
+[sshd]
+enabled = true
+port    = {{ ssh_port | default(22) }}
+logpath = %(sshd_log)s
+

@@ -1,0 +1,111 @@
+---
+- name: Update apt package list
+  apt:
+    update_cache: yes
+  when: ansible_facts['os_family'] == 'Debian'
+
+- name: Install essential security packages
+  apt:
+    name:
+      - openssh-server
+      - ufw
+      - unattended-upgrades
+      - fail2ban
+    state: latest
+
+- name: Set root password
+  user:
+    name: root
+    password: "{{ root_password | password_hash('sha512') }}"
+
+- name: Create new SSH user
+  user:
+    name: "{{ ssh_user }}"
+    groups: sudo
+    shell: /bin/bash
+    create_home: yes
+    password: "{{ ssh_user_password | password_hash('sha512') }}"
+
+- name: Set up authorized keys for the new user
+  authorized_key:
+    user: "{{ ssh_user }}"
+    key: "{{ lookup('file', ssh_public_key_file) }}"
+
+- name: Configure SSH
+  lineinfile:
+    path: /etc/ssh/sshd_config
+    regexp: "{{ item.regexp }}"
+    line: "{{ item.line }}"
+  loop:
+    - { regexp: '^#?MaxAuthTries', line: 'MaxAuthTries 3' }
+    - { regexp: '^#?AllowUsers', line: 'AllowUsers {{ ssh_user }} root' }
+  notify: Restart SSH
+
+- name: Configure UFW
+  ufw:
+    rule: allow
+    port: "{{ item }}"
+  # taken from https://docs.k3s.io/installation/requirements?os=debian#operating-systems
+  loop:
+    - "{{ ssh_port | default('22') }}"   # SSH
+    - "80"                               # HTTP
+    - "443"                              # HTTPS
+    - "6443"                             # K3s API Server
+    - "2379"                             # etcd (HA only)
+    - "2380"                             # etcd (HA only)
+    - "10250"                            # Kubelet metrics
+    - "51820"                            # Flannel Wireguard with IPv4
+    - "51821"                            # Flannel Wireguard with IPv6
+    - "5001"                             # Embedded distributed registry (Spegel)
+
+- name: Allow traffic from K3s pods CIDR
+  ufw:
+    rule: allow
+    from_ip: "10.42.0.0/16"            # Pods
+    to: "any"
+
+- name: Allow traffic from K3s services CIDR
+  ufw:
+    rule: allow
+    from_ip: "10.43.0.0/16"            # Services
+    to: "any"
+
+- name: Enable UFW
+  ufw:
+    state: enabled
+    policy: deny
+
+- name: Set basic system-wide security settings
+  sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    state: present
+  loop:
+    - { key: "net.ipv4.conf.all.accept_redirects", value: "0" }
+    - { key: "net.ipv4.conf.all.send_redirects", value: "0" }
+    - { key: "net.ipv4.conf.all.accept_source_route", value: "0" }
+    - { key: "net.ipv4.tcp_syncookies", value: "1" }
+
+- name: Configure unattended-upgrades
+  template:
+    src: 50unattended-upgrades.j2
+    dest: /etc/apt/apt.conf.d/50unattended-upgrades
+    mode: '0644'
+  notify: Restart unattended-upgrades
+
+- name: Enable automatic updates
+  copy:
+    content: |
+      APT::Periodic::Update-Package-Lists "1";
+      APT::Periodic::Unattended-Upgrade "1";
+      APT::Periodic::AutocleanInterval "7";
+    dest: /etc/apt/apt.conf.d/20auto-upgrades
+    mode: '0644'
+
+- name: Configure fail2ban
+  template:
+    src: jail.local.j2
+    dest: /etc/fail2ban/jail.local
+    mode: '0644'
+  notify: Restart fail2ban
+

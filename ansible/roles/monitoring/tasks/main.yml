@@ -22,6 +22,7 @@
     chart_ref: prometheus-community/prometheus
     namespace: monitoring
     create_namespace: false
+    wait: yes
     release_values:
       alertmanager:
         enabled: true
@@ -49,6 +50,7 @@
     chart_ref: grafana/loki-stack
     namespace: monitoring
     create_namespace: false
+    wait: yes
     release_values:
       loki:
         persistence:
@@ -69,6 +71,7 @@
     chart_ref: grafana/grafana
     namespace: monitoring
     create_namespace: false
+    wait: yes
     release_values:
       adminPassword: "{{ grafana_admin_password }}"
       persistence:
@@ -100,24 +103,16 @@
               path: /var/lib/grafana/dashboards
       dashboards:
         default:
-          kubernetes-cluster-monitoring-1:
-            gnetId: 13770
-            revision: 1
-            datasource: Prometheus
-          kubernetes-cluster-monitoring-2:
-            gnetId: 315
-            revision: 3
-            datasource: Prometheus
-          kubernetes-cluster-monitoring-3:
-            gnetId: 7249
-            revision: 1
-            datasource: Prometheus
-          kubernetes-cluster-monitoring-4:
+          kubernetes-cluster-monitoring-1: # Node export full, good one
             gnetId: 1860
             revision: 37
             datasource: Prometheus
-          kubernetes-cluster-monitoring-5:
-            gnetId: 6417
+          kubernetes-cluster-monitoring-2: # Modern Global view
+            gnetId: 15757
+            revision: 42
+            datasource: Prometheus
+          kubernetes-cluster-monitoring-3:
+            gnetId: 13770 # chinese label, good info
             revision: 1
             datasource: Prometheus
           traefik:
@@ -128,4 +123,11 @@
             gnetId: 13639
             revision: 2
             datasource: Loki
-
+      #     # Custom dashboards
+      #     custom-dashboard-1:
+      #       file: dashboards/custom-dashboard-1.json
+      #     # custom-dashboard-2:
+      #     #   file: dashboards/custom-dashboard-2.json
+      # dashboardsConfigMaps:
+      #   custom-dashboards: custom-dashboards
+      #
