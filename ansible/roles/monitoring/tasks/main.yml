@@ -37,6 +37,9 @@
           size: 10Gi
         retention: 7d
         retentionSize: 9GB
+        serviceMonitorSelectorNilUsesHelmValues: false # do not use the default Helm release labels for ServiceMonitor selection
+        serviceMonitorSelector: {} # select all ServiceMonitors in the cluster
+        serviceMonitorNamespaceSelector: {} # look for ServiceMonitors in all namespaces
       pushgateway:
         enabled: false
       nodeExporter:

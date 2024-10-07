@@ -1,3 +1,6 @@
+# Main domain
+main_domain: "yourdomain.com"
+
 # Prometheus admin password
 prometheus_admin_password: "change_me"
 
@@ -36,3 +39,8 @@ cloudflare_ips:
  - "104.24.0.0/14"
  - "172.64.0.0/13"
  - "131.0.72.0/22"
+
+ # Postgres
+postgres_namespace: "database"
+postgres_database: "main_db"
+postgres_password: "change_me"

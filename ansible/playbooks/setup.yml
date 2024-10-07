@@ -25,6 +25,18 @@
       include_role:
         name: vpn
 
+    - name: Setup PostgreSQL
+      include_role:
+        name: postgres
+
+    - name: Apply monitoring ingress (grafana and wireguard)
+      include_role:
+        name: apply_monitoring_ingress
+
+    - name: Deploy test app (nginx)
+      include_role:
+        name: deploy_test_app
+
     # - name: Final SSH hardening (remove root login)
     #   include_role:
     #     name: remove_root

@@ -1,0 +1,6 @@
+---
+- name: Deploy test web app (nginx)
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'test_nginx.yml.j2') | from_yaml }}"
+    state: present
+

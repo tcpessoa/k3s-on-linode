@@ -1,0 +1,26 @@
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: monitoring-tools
+  namespace: monitoring
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production
+    spec.ingressClassName: traefik
+spec:
+  tls:
+  - hosts:
+    - grafana.{{ main_domain }}
+    - wireguard.{{ main_domain }}
+    secretName: monitoring-tools-tls
+  rules:
+  - host: grafana.{{ main_domain }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: grafana
+            port: 
+              number: 80

@@ -1,0 +1,12 @@
+---
+- name: Apply Monitoring (Grafana) Ingress
+  # Important to run this before the wireguard role
+  # since this one will generate the TLS certificates
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'monitoring_ingress.yml.j2') | from_yaml }}"
+    state: present
+
+- name: Apply Wireguard VPN Ingress
+  kubernetes.core.k8s:
+    definition: "{{ lookup('template', 'wg_vpn_ingress.yml.j2') | from_yaml }}"
+    state: present

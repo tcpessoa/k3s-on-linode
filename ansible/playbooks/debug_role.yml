@@ -6,7 +6,14 @@
     - "{{ playbook_dir }}/../group_vars/all/vault.yml"
   pre_tasks:
     - name: Load non-sensitive environment variables
-      set_fact: 
+      set_fact:
         wg_host: "{{ ansible_host }}"
   roles:
-    - monitoring
+    - server
+    # - k3s
+    # - monitoring
+    # - vpn
+    # - postgres
+    # - apply_monitoring_ingress
+    # - deploy_test_app
+    # - remote_root

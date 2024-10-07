@@ -80,3 +80,18 @@ spec:
     port: 51821
     protocol: TCP
 
+---
+apiversion: v1
+kind: Service
+metadata:  
+  name: wg-easy-ui  
+  namespace: vpn
+spec:  
+  type: ClusterIP  
+  selector:    
+    app: wg-easy  
+  ports:  
+  - name: web    
+    port: 80    
+    targetPort: 51821    
+    protocol: TCP

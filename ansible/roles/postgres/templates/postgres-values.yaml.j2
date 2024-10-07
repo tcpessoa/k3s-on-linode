@@ -1,0 +1,23 @@
+global:
+  storageClass: "linode-block-storage"
+primary:
+  persistence:
+    size: 5Gi
+  metrics:
+    enabled: true
+    serviceMonitor:
+      enabled: true
+      additionalLabels:
+        release: prometheus
+auth:
+  postgresPassword: "{{ postgres_password }}"
+  database: "{{ postgres_database }}"
+
+# the primary.metrics should be sufficient for a single-instance deployment
+# so we remove the root metrics
+# metrics:
+#   enabled: true
+#   serviceMonitor:
+#     enabled: true
+#     additionalLabels:
+#       release: prometheus
