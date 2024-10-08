@@ -10,12 +10,13 @@ This project provides Infrastructure as Code (IaC) scripts to deploy a K3s Kuber
 
 ## Features
 
-- Automated deployment of a K3s cluster on Linode
+- Automated deployment of a K3s node on Linode
 - Integrated monitoring stack with Prometheus, Loki (with Promtail) and Grafana.
 - WireGuard VPN for secure cluster access
 - Cert-Manager for automatic SSL/TLS certificate management
 - Traefik as the Ingress Controller
 - Linode CSI Driver for dynamic volume provisioning
+- CloudFlare pointing to your VPS with full SSL encryption
 
 ## Default dashboards included
 
@@ -32,6 +33,8 @@ Search for logs across all your pods thanks to Loki with Promtail:
 - [kubectl](https://kubernetes.io/docs/tasks/tools/)
 - [Helm](https://helm.sh/docs/intro/install/)
 - A Linode account and API token
+- A CloudFlare account and API token
+- A domain with CloudFlare as the DNS provider
 
 ## Getting Started
 
@@ -49,13 +52,21 @@ Search for logs across all your pods thanks to Loki with Promtail:
    ```
 
 4. Edit the configuration files:
-   - `terraform/terraform.tfvars`: Add your Linode API token and SSH key path
-   - `ansible/group_vars/all/vault.yml`: Set passwords and other sensitive information
+   Add your Linode API token and SSH key path to `terraform/terraform.tfvars`.
+
+   Run:
+
+   ```sh
+   ansible-vault edit ansible/group_vars/all/vault.yml --vault-password-file ansible/.vault_password
+   ```
+
+   To set passwords and other sensitive information.
 
 5. Deploy the infrastructure:
    ```sh
    cd terraform
    terraform init
+   terraform plan
    terraform apply
    ```
 
@@ -71,77 +82,10 @@ Search for logs across all your pods thanks to Loki with Promtail:
    ```
 
 8. Access your cluster:
-   - Use the kubeconfig file in `ansible/playbooks/configs/kubeconfig`
-   - Set up WireGuard VPN using the web UI at `http://<LINODE_IP>:51821`. 
-
-## Usage
-Once your cluster is set up, you can deploy applications using kubectl or Helm. Here's an example of deploying a simple application:
-
-```yaml
-apiVersion: apps/v1
-kind: Deployment
-metadata:
-  name: myapp
-  namespace: default
-spec:
-  replicas: 1
-  selector:
-    matchLabels:
-      app: myapp
-  template:
-    metadata:
-      labels:
-        app: myapp
-    spec:
-      containers:
-      - name: myapp
-        image: nginx:latest
-        ports:
-        - containerPort: 80
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: myapp
-  namespace: default
-spec:
-  selector:
-    app: myapp
-  ports:
-    - port: 80
-      targetPort: 80
----
-apiVersion: networking.k8s.io/v1
-kind: Ingress
-metadata:
-  annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production
-    spec.ingressClassName: traefik
-  name: myapp
-  namespace: default
-spec:
-  rules:
-  - host: myapp.example.com
-    http:
-      paths:
-      - backend:
-          service:
-            name: myapp
-            port: 
-              number: 80
-        path: /
-        pathType: Prefix
-  tls:
-  - hosts:
-    - myapp.example.com
-    secretName: myapp-example-com-tls
-```
-
-Save this as `myapp.yaml` and apply it with:
-
-```
-kubectl apply -f myapp.yaml
-```
+   - Go ahead and visit `https://test.<main-domain>.com`
+   - Check metrics at `https://grafana.<main-domain>.com`
+   - Set up WireGuard VPN using the web UI at `http://<LINODE_IP>:51821` or `https://wireguard.<main-domain>.com`
+   - Use the kubeconfig file in `ansible/playbooks/configs/kubeconfig` or run `./merge-kubeconfig.sh` to append the new config.
 
 # Troubleshoot
 - Run `ansible-playbook -vvvv ...` to increase verbosity of commands
