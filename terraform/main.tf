@@ -83,6 +83,34 @@ resource "cloudflare_zone_settings_override" "domain_settings" {
   }
 }
 
+# Example for rate limiting with Cloudflare
+# resource "cloudflare_ruleset" "login_rate_limit" {
+#   for_each    = toset(local.all_domains)
+#   zone_id     = var.cloudflare_zone_ids[each.key]
+#   name        = "${each.key} - Login Rate Limit"
+#   description = "Rate limit for login endpoint"
+#   kind        = "zone"
+#   phase       = "http_ratelimit"
+#
+#   rules {
+#     # action = "challenge"
+#     action = "block"
+#     ratelimit {
+#       characteristics = [
+#         "cf.colo.id",
+#         "ip.src"
+#       ]
+#       period              = 10 # (free tier)
+#       requests_per_period = 2
+#       mitigation_timeout  = 10
+#     }
+#     # expression  = "(http.request.uri.path eq \"/login\" and http.request.method eq \"POST\")"
+#     expression  = "(http.request.uri.path eq \"/login\")" # (free tier does not support method)
+#     description = "Rate limit for login endpoint"
+#     enabled     = true
+#   }
+# }
+
 output "server_ip" {
   value = linode_instance.k3s.ip_address
 }
