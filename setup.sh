@@ -4,7 +4,6 @@
 if [ ! -f terraform/terraform.tfvars ]; then
     echo "Creating terraform.tfvars from example..."
     cp terraform/terraform.tfvars.example terraform/terraform.tfvars
-    echo "Please edit terraform/terraform.tfvars with your Linode API token and SSH key path."
 fi
 
 # Ansible setup
@@ -18,8 +17,7 @@ if [ ! -f ansible/group_vars/all/vault.yml ]; then
 
     ansible-vault encrypt ansible/group_vars/all/vault.yml --vault-password-file ansible/.vault_password
 
-    echo "Vault created and encrypted. You can now edit it using:"
-    echo "ansible-vault edit ansible/group_vars/all/vault.yml --vault-password-file ansible/.vault_password"
+    echo "Vault created and encrypted"
 fi
 
 # Check for required tools
@@ -30,4 +28,6 @@ for cmd in terraform ansible ansible-vault kubectl helm; do
     fi
 done
 
-echo "Setup complete. Please edit the created files with your specific configurations."
+echo "Setup complete!"
+echo "Please edit terraform/terraform.tfvars with your Linode API token and SSH key path."
+echo "ansible-vault edit ansible/group_vars/all/vault.yml --vault-password-file ansible/.vault_password"
