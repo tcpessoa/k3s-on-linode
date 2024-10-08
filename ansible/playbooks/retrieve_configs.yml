@@ -2,7 +2,7 @@
 - name: Generate WireGuard client configuration
   hosts: k3s
   vars:
-    wg_client_name: "my-vpn-client"  # Adjust this name as needed
+    wg_client_name: "my-vpn-client"
     cluster_name: "linode-k3s-new"
   tasks:
     - name: Create local directory to store config files

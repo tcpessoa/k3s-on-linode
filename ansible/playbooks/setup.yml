@@ -1,5 +1,5 @@
 ---
-- hosts: all
+- hosts: k3s
   become: yes
   vars_files:
     - "{{ playbook_dir }}/../group_vars/all/vault.yml"
@@ -8,36 +8,13 @@
       set_fact: 
         wg_host: "{{ ansible_host }}"
 
-  tasks:
-    - name: Setup server
-      include_role:
-        name: server
-
-    - name: Ensure k3s is installed
-      include_role:
-        name: k3s
-
-    - name: Set up monitoring
-      include_role:
-        name: monitoring
-
-    - name: Configure VPN
-      include_role:
-        name: vpn
-
-    - name: Setup PostgreSQL
-      include_role:
-        name: postgres
-
-    - name: Apply monitoring ingress (grafana and wireguard)
-      include_role:
-        name: apply_monitoring_ingress
-
-    - name: Deploy test app (nginx)
-      include_role:
-        name: deploy_test_app
-
-    # - name: Final SSH hardening (remove root login)
-    #   include_role:
-    #     name: remove_root
-
+  roles:
+     - server
+     - k3s
+     - linode_storage_class # LINODE specific storage class, used for persistent volumes (Postgres)
+     - monitoring
+     - vpn
+     - postgres
+     - apply_monitoring_ingress
+     - deploy_test_app
+    # - remote_root

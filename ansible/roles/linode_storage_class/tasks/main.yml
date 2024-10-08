@@ -1,0 +1,42 @@
+---
+- name: Add Linode Helm repo
+  kubernetes.core.helm_repository:
+    name: linode-csi
+    repo_url: https://linode.github.io/linode-blockstorage-csi-driver/ 
+
+- name: Update Helm repos
+  command: helm repo update
+
+- name: Install Linode BlockStorage CSI Driver
+  kubernetes.core.helm:
+    name: linode-csi-driver
+    chart_ref: linode-csi/linode-blockstorage-csi-driver
+    release_namespace: kube-system
+    create_namespace: false
+    values:
+      apiToken: "{{ linode_api_token }}"
+      region: "{{ linode_region | default('eu-central') }}"
+
+- name: Create Linode Block Storage Class
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: linode-block-storage
+      provisioner: linodebs.csi.linode.com
+      allowVolumeExpansion: true
+
+  # It is set here as non-default storage class, because otherwise
+  # volumes will be created for prometheus and grafana with this storage class
+  # even though they set local-path as their storage class
+- name: Set linode-block-storage-retain as non-default storage class
+  kubernetes.core.k8s:
+    definition:
+      apiVersion: storage.k8s.io/v1
+      kind: StorageClass
+      metadata:
+        name: linode-block-storage-retain
+        annotations:
+          storageclass.kubernetes.io/is-default-class: "false"
+    state: present
