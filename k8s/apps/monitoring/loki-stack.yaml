@@ -1,0 +1,89 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: loki
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: loki-stack
+    targetRevision: 2.10.2
+    helm:
+      values: |
+        loki:
+          persistence:
+            enabled: true
+            storageClass: "local-path"
+            size: 5Gi
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 100m
+              memory: 128Mi
+          config:
+            limits_config:
+              retention_period: 168h  # 7 days
+
+        promtail:
+          enabled: true
+          config:
+            snippets:
+              extraRelabelConfigs:
+                - action: labelmap
+                  regex: __meta_kubernetes_pod_label_(.+)
+                - action: replace
+                  sourceLabels: [__meta_kubernetes_namespace]
+                  targetLabel: namespace
+                - action: replace
+                  sourceLabels: [__meta_kubernetes_pod_name]
+                  targetLabel: pod
+                - action: replace
+                  sourceLabels: [__meta_kubernetes_pod_container_name]
+                  targetLabel: container
+          
+          serviceMonitor:
+            enabled: true
+          
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 50m
+              memory: 64Mi
+          
+          tolerations:
+            - effect: NoSchedule
+              operator: Exists
+          
+          extraVolumes:
+            - name: docker
+              hostPath:
+                path: /var/lib/docker/containers
+            - name: pods
+              hostPath:
+                path: /var/log/pods
+          
+          extraVolumeMounts:
+            - name: docker
+              mountPath: /var/lib/docker/containers
+              readOnly: true
+            - name: pods
+              mountPath: /var/log/pods
+              readOnly: true
+        
+        grafana:
+          enabled: false  # Grafana is installed separately
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
+    syncOptions:
+      - CreateNamespace=true

@@ -7,7 +7,7 @@ terraform/.terraform.lock.hcl
 terraform/terraform.tfstate*
 
 # Ansible
-ansible/playbooks/configs/kubeconfig
+ansible/playbooks/configs/*
 ansible/inventory/hosts.yml
 
 ## Ansible Vault

@@ -137,3 +137,5 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - [Linode](https://www.linode.com/)
 - [Terraform](https://www.terraform.io/)
 - [Ansible](https://www.ansible.com/)
+
+kubectl -n argocd get secret argocd-initial-admin-secret -o jsonpath="{.data.password}" | base64 -d

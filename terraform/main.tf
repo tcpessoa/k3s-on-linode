@@ -13,44 +13,44 @@ resource "linode_instance" "k3s" {
   }
 }
 
-resource "linode_firewall" "k3s_firewall" {
-  label  = "${var.main_domain}-k3s-firewall"
-  inbound_policy  = "DROP"
-  outbound_policy = "ACCEPT"
-
-  linodes = [ linode_instance.k3s.id ]
-
- inbound {
-    label    = "allow-ssh"
-    action   = "ACCEPT"
-    protocol = "TCP"
-    ports    = "22"
-    ipv4     = ["0.0.0.0/0"]
-  }
-
-   inbound {
-     label    = "allow-http-https"
-     action   = "ACCEPT"
-     protocol = "TCP"
-     ports    = "80,443"
-     ipv4     = var.cloudflare_ips
-   }
-
-  inbound {
-    label  = "allow-wireguard"
-    action = "ACCEPT"
-    protocol = "UDP"
-    ports  = "51820"
-    ipv4     = ["0.0.0.0/0"]
-  }
-  inbound {
-    label  = "allow-wireguard-ui"
-    action = "ACCEPT"
-    protocol = "TCP"
-    ports  = "51821"
-    ipv4     = ["0.0.0.0/0"]
-  }
-}
+# resource "linode_firewall" "k3s_firewall" {
+#   label  = "${var.main_domain}-k3s-firewall"
+#   inbound_policy  = "DROP"
+#   outbound_policy = "ACCEPT"
+#
+#   linodes = [ linode_instance.k3s.id ]
+#
+#  inbound {
+#     label    = "allow-ssh"
+#     action   = "ACCEPT"
+#     protocol = "TCP"
+#     ports    = "22"
+#     ipv4     = ["0.0.0.0/0"]
+#   }
+#
+#    inbound {
+#      label    = "allow-http-https"
+#      action   = "ACCEPT"
+#      protocol = "TCP"
+#      ports    = "80,443"
+#      ipv4     = var.cloudflare_ips
+#    }
+#
+#   inbound {
+#     label  = "allow-wireguard"
+#     action = "ACCEPT"
+#     protocol = "UDP"
+#     ports  = "51820"
+#     ipv4     = ["0.0.0.0/0"]
+#   }
+#   inbound {
+#     label  = "allow-wireguard-ui"
+#     action = "ACCEPT"
+#     protocol = "TCP"
+#     ports  = "51821"
+#     ipv4     = ["0.0.0.0/0"]
+#   }
+# }
 
 ## Cloudfare linking
 locals {

@@ -1,0 +1,74 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: grafana
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: grafana
+    targetRevision: 7.3.0
+    helm:
+      values: |
+        adminPassword: "admin"  # You should replace this with a secure password
+        persistence:
+          enabled: false
+        
+        datasources:
+          datasources.yaml:
+            apiVersion: 1
+            datasources:
+            - name: Prometheus
+              type: prometheus
+              url: http://prometheus-server.monitoring.svc.cluster.local
+              access: proxy
+              isDefault: true
+            - name: Loki
+              type: loki
+              url: http://loki.monitoring.svc.cluster.local:3100
+              access: proxy
+
+        dashboards:
+          default:
+            kubernetes-cluster-monitoring-1:
+              gnetId: 1860
+              revision: 37
+              datasource: Prometheus
+            kubernetes-cluster-monitoring-2:
+              gnetId: 15757
+              revision: 42
+              datasource: Prometheus
+            kubernetes-cluster-monitoring-3:
+              gnetId: 13770
+              revision: 1
+              datasource: Prometheus
+            traefik:
+              gnetId: 4475
+              revision: 5
+              datasource: Prometheus
+            loki-dashboard:
+              gnetId: 13639
+              revision: 2
+              datasource: Loki
+        
+        dashboardProviders:
+          dashboardproviders.yaml:
+            apiVersion: 1
+            providers:
+            - name: 'default'
+              orgId: 1
+              folder: ''
+              type: file
+              disableDeletion: false
+              editable: true
+              options:
+                path: /var/lib/grafana/dashboards
+
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true

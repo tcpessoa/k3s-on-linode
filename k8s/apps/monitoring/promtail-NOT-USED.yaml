@@ -1,0 +1,66 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata:
+  name: promtail
+  namespace: argocd
+spec:
+  project: default
+  source:
+    repoURL: https://grafana.github.io/helm-charts
+    chart: promtail
+    targetRevision: 6.16.6
+    helm:
+      values: |
+        config:
+          lokiAddress: http://loki.monitoring.svc.cluster.local:3100/loki/api/v1/push
+          snippets:
+            extraRelabelConfigs:
+              - action: labelmap
+                regex: __meta_kubernetes_pod_label_(.+)
+              - action: replace
+                sourceLabels: [__meta_kubernetes_namespace]
+                targetLabel: namespace
+              - action: replace
+                sourceLabels: [__meta_kubernetes_pod_name]
+                targetLabel: pod
+              - action: replace
+                sourceLabels: [__meta_kubernetes_pod_container_name]
+                targetLabel: container
+
+        serviceMonitor: # Only makes sense if Prometheus Operator is installed, ServiceMonitor CRD is installed with it
+          enabled: false
+
+        resources:
+          requests:
+            cpu: 25m
+            memory: 32Mi
+          limits:
+            cpu: 50m
+            memory: 64Mi
+
+        tolerations:
+          - effect: NoSchedule
+            operator: Exists
+
+        extraVolumes:
+          - name: docker
+            hostPath:
+              path: /var/lib/docker/containers
+          - name: pods
+            hostPath:
+              path: /var/log/pods
+
+        extraVolumeMounts:
+          - name: docker
+            mountPath: /var/lib/docker/containers
+            readOnly: true
+          - name: pods
+            mountPath: /var/log/pods
+            readOnly: true
+  destination:
+    server: https://kubernetes.default.svc
+    namespace: monitoring
+  syncPolicy:
+    automated:
+      prune: true
+      selfHeal: true
