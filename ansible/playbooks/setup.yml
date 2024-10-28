@@ -9,12 +9,13 @@
         wg_host: "{{ ansible_host }}"
 
   roles:
-     - server
+     # - server
      - k3s
-     - linode_storage_class # LINODE specific storage class, used for persistent volumes (Postgres)
-     - monitoring
-     - vpn
-     - postgres
-     - apply_monitoring_ingress
-     - deploy_test_app
-    # - remote_root
+     - argocd
+     # - linode_storage_class # LINODE specific storage class, used for persistent volumes (Postgres)
+     # - monitoring
+     # - vpn
+     # - postgres
+     # - apply_monitoring_ingress
+     # - deploy_test_app
+     # - remote_root

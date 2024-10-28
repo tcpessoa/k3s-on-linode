@@ -22,6 +22,11 @@ ssh_public_key_file: "{REPLACE_ME}/.ssh/id_SOMETHING.pub" # DIFFERENT KEY, id_rs
 ssh_user_password: "change_me"
 root_password: "change_me"
 
+ # Postgres
+postgres_namespace: "database"
+postgres_database: "main_db"
+postgres_password: "change_me"
+
 # Cloudflare IPs
 cloudflare_ips:
  - "173.245.48.0/20"
@@ -40,7 +45,3 @@ cloudflare_ips:
  - "172.64.0.0/13"
  - "131.0.72.0/22"
 
- # Postgres
-postgres_namespace: "database"
-postgres_database: "main_db"
-postgres_password: "change_me"

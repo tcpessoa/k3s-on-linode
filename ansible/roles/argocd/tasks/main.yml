@@ -1,0 +1,92 @@
+---
+- name: Add ArgoCD Helm repo
+  kubernetes.core.helm_repository:
+    name: argo
+    repo_url: https://argoproj.github.io/argo-helm
+
+- name: Install ArgoCD
+  kubernetes.core.helm:
+    name: argocd
+    chart_ref: argo/argo-cd
+    release_namespace: argocd
+    create_namespace: true
+    values:
+      configs:
+        params:
+          server.insecure: true
+
+      server:
+        ingress:
+          enabled: true
+          ingressClassName: traefik
+ 
+          annotations:
+            cert-manager.io/cluster-issuer: letsencrypt-production
+            traefik.ingress.kubernetes.io/router.entrypoints: websecure
+            traefik.ingress.kubernetes.io/backend-protocol: "HTTP"
+            traefik.ingress.kubernetes.io/ssl-redirect: "true"
+            traefik.ingress.kubernetes.io/ssl-permanent-redirect: "true"
+
+          hostname: "argocd.{{ main_domain }}"
+          path: /
+          pathType: Prefix
+
+          tls: false
+          extraTls:
+            - hosts:
+                - "argocd.{{ main_domain }}"
+              secretName: argocd-server-tls
+
+- name: Wait for ArgoCD to be ready
+  kubernetes.core.k8s_info:
+    api_version: v1
+    kind: Pod
+    namespace: argocd
+    label_selectors:
+      - app.kubernetes.io/name=argocd-server
+  register: argocd_pod
+  until: argocd_pod.resources[0].status.phase == "Running"
+  retries: 30
+  delay: 10
+
+- name: Ensure configs directory exists
+  file:
+    path: "{{ playbook_dir }}/configs"
+    state: directory
+    mode: '0755'
+  delegate_to: localhost
+
+- name: Get ArgoCD initial admin password
+  kubernetes.core.k8s_info:
+    kind: Secret
+    namespace: argocd
+    name: argocd-initial-admin-secret
+  register: admin_secret
+
+- name: Decode and save admin password
+  when: admin_secret.resources | length > 0
+  block:
+    - name: Decode admin password
+      set_fact:
+        admin_password: "{{ admin_secret.resources[0].data.password | b64decode }}"
+
+    - name: Save password to file
+      copy:
+        content: |
+          ArgoCD Initial Admin Credentials
+          ==============================
+          Username: admin
+          Password: {{ admin_password }}
+          URL: https://argocd.{{ main_domain }}
+        dest: "{{ playbook_dir }}/configs/argocd-credentials.txt"
+        mode: '0600'
+      delegate_to: localhost
+
+    - name: Display admin credentials
+      debug:
+        msg:
+          - "ArgoCD Initial Admin Credentials"
+          - "=============================="
+          - "Username: admin"
+          - "Password: {{ admin_password }}"
+          - "URL: https://argocd.{{ main_domain }}"
